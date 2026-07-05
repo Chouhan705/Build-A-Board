@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>3D Keyboard Configurator — Prototype</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- 3D canvas mounts here -->
+  <div id="scene-container"></div>
+
+  <!-- UI overlay -->
+  <div id="ui-overlay">
+    <div class="panel">
+      <h1 class="panel-title">Keyboard Configurator</h1>
+      <p class="panel-subtitle">Prototype build — placeholder geometry</p>
+
+      <div class="control-group">
+        <h2 class="control-label">Base Color</h2>
+        <div class="button-row" data-control="baseColor">
+          <button class="option-btn" data-value="red">Red</button>
+          <button class="option-btn" data-value="blue">Blue</button>
+          <button class="option-btn active" data-value="black">Black</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h2 class="control-label">Key Shape</h2>
+        <div class="button-row" data-control="keyShape">
+          <button class="option-btn active" data-value="flat">Flat</button>
+          <button class="option-btn" data-value="rounded">Rounded</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h2 class="control-label">Key Color</h2>
+        <div class="button-row" data-control="keyColor">
+          <button class="option-btn active" data-value="red">Red</button>
+          <button class="option-btn" data-value="green">Green</button>
+          <button class="option-btn" data-value="blue">Blue</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <h2 class="control-label">Switch Type</h2>
+        <div class="button-row" data-control="switchType">
+          <button class="option-btn active" data-value="linear">Linear</button>
+          <button class="option-btn" data-value="tactile">Tactile</button>
+          <button class="option-btn" data-value="clicky">Clicky</button>
+        </div>
+      </div>
+
+      <div class="info-footer">
+        Drag to orbit · Scroll to zoom
+      </div>
+    </div>
+  </div>
+
+  <!-- Three.js via ES module CDN -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module" src="script.js"></script>
+</body>
+</html>
