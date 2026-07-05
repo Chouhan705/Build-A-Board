@@ -180,7 +180,13 @@ function currentKeyGeometry() {
 }
 
 // Keycap plastic: soft matte finish, near-zero metalness.
-const keyMaterial = new THREE.MeshStandardMaterial({
+// This is a TEMPLATE only — never assigned to a mesh directly.
+// Each key mesh gets its own clone() of it below so that GSAP can
+// animate every key's color independently (required for the wave
+// effect). Geometry is still shared across all keys; only the
+// lightweight material (a color + two scalars, no textures) is
+// cloned per key, so this stays cheap even at full-keyboard scale.
+const keyMaterialTemplate = new THREE.MeshStandardMaterial({
   color: COLORS.key[config.keyColor],
   roughness: 0.6,
   metalness: 0.05,
@@ -214,8 +220,10 @@ for (let row = 0; row < ROWS; row++) {
     keyboardGroup.add(switchMesh);
     switchMeshes.push(switchMesh);
 
-    // Key: floats above the switch stem
-    const keyMesh = new THREE.Mesh(currentKeyGeometry(), keyMaterial);
+    // Key: floats above the switch stem.
+    // .clone() here is a one-time cost at build time, not per-animation —
+    // after this, each key owns a cheap independent material instance.
+    const keyMesh = new THREE.Mesh(currentKeyGeometry(), keyMaterialTemplate.clone());
     keyMesh.position.set(
       x,
       BASE_HEIGHT / 2 + switchHeight * 0.45 + 0.16,
@@ -286,10 +294,12 @@ function focusOn(part) {
 }
 
 // ----------------------------------------------------------
-// 7. COLOR TRANSITIONS — reusable GSAP color tween
+// 7. COLOR TRANSITIONS — single-material tween + staggered wave
 // ----------------------------------------------------------
 /**
- * Smoothly tween a material's color to a new hex value.
+ * Smoothly tween a single material's color to a new hex value.
+ * Used for parts (base, switches) where all instances still share
+ * one material and should change in unison.
  * @param {THREE.Material} material
  * @param {number} hex
  */
@@ -302,6 +312,45 @@ function tweenMaterialColor(material, hex) {
     duration: 0.5,
     ease: "power2.out",
   });
+}
+
+/**
+ * Animate the keycaps to a new color as a traveling wave rather than
+ * an all-at-once change. Each key has its own cloned material
+ * (see keyMaterialTemplate.clone() above), which is what makes it
+ * possible for GSAP to stagger their colors independently.
+ *
+ * @param {number} targetColorHex - hex color the wave animates toward
+ * @param {"x" | "z"} axis - direction the wave travels across the board
+ *   ("x" = left-to-right, "z" = front-to-back)
+ * @param {number} staggerSeconds - delay between each successive key
+ */
+function animateColorWave(targetColorHex, axis = "x", staggerSeconds = 0.05) {
+  const target = new THREE.Color(targetColorHex);
+
+  // Sort a COPY of keyMeshes by position so we never mutate the
+  // original array's order (other code relies on keyMeshes[i] lining
+  // up with switchMeshes[i]).
+  const sortedMeshes = [...keyMeshes].sort(
+    (a, b) => a.position[axis] - b.position[axis]
+  );
+
+  // GSAP can stagger a tween across an array of targets directly —
+  // here the targets are each key's own material.color object.
+  const colorTargets = sortedMeshes.map((mesh) => mesh.material.color);
+
+  gsap.to(colorTargets, {
+    r: target.r,
+    g: target.g,
+    b: target.b,
+    duration: 0.5,
+    ease: "power2.out",
+    stagger: staggerSeconds,
+  });
+
+  // Keep the template in sync too, so any key added later starts
+  // from the current color instead of the original default.
+  keyMaterialTemplate.color.copy(target);
 }
 
 // ----------------------------------------------------------
@@ -325,10 +374,10 @@ function updateKeyShape(value) {
   focusOn("keys");
 }
 
-/** Update every key's color (animated) + focus the camera on keys. */
+/** Update every key's color as a traveling wave, then focus the camera on keys. */
 function updateKeyColor(value) {
   config.keyColor = value;
-  tweenMaterialColor(keyMaterial, COLORS.key[value]);
+  animateColorWave(COLORS.key[value], "x", 0.05);
   focusOn("keys");
 }
 
